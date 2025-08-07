@@ -1,0 +1,8 @@
+-- CreateTable
+CREATE TABLE "Despesa" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "descricao" TEXT NOT NULL,
+    "valor" REAL NOT NULL,
+    "categoria" TEXT NOT NULL,
+    "data" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
