@@ -99,7 +99,7 @@ A API expõe os seguintes endpoints para manipulação de dados:
 
 Desenvolvido por **Luiz Gustavo Guaycurus Goulart**.
 
-* **LinkedIn:** `https://www.linkedin.com/in/luizguaycurus/`
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/luizguaycurus/)
 * **GitHub:** `https://github.com/luizguaycurus`
 
 ---
