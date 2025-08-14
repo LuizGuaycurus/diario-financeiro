@@ -1,48 +1,81 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import FormularioTransacao from './components/FormularioTransacao';
+import ListaTransacoes from './components/ListaTransacoes';
 
 function App() {
   const [despesas, setDespesas] = useState([]);
   const [receitas, setReceitas] = useState([]);
 
-  // useEffect executa o código dentro dele assim que o componente aparece na tela.
-  useEffect(() => {
-    // Função para buscar todos os dados da API
-    async function buscarDados() {
-      try {
-        // Fazemos duas chamadas à API em paralelo para ser mais eficiente
-        const [resDespesas, resReceitas] = await Promise.all([
-          axios.get('http://localhost:3000/despesas'),
-          axios.get('http://localhost:3000/receitas')
-        ]);
-        
-        // atualiza os "estados" com os dados recebidos da api
-        setDespesas(resDespesas.data);
-        setReceitas(resReceitas.data);
+  // Função para buscar os dados iniciais da API
+  const buscarDados = async () => {
+    try {
+      const [resDespesas, resReceitas] = await Promise.all([
+        axios.get('http://localhost:3000/despesas'),
+        axios.get('http://localhost:3000/receitas')
+      ]);
+      setDespesas(resDespesas.data);
+      setReceitas(resReceitas.data);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+    }
+  };
 
+  // useEffect para buscar os dados quando o componente carregar
+  useEffect(() => {
+    buscarDados();
+  }, []);
+
+  // Função que será chamada pelo formulário para adicionar uma nova transação
+  const handleAdicionarTransacao = async (novaTransacao, tipo) => {
+    try {
+      // Define o endpoint da API com base no tipo ('receitas' ou 'despesas')
+      const endpoint = `http://localhost:3000/${tipo}s`;
+      
+      // Faz a requisição POST para a API para criar o novo registro
+      await axios.post(endpoint, novaTransacao);
+      
+      // Após o sucesso, busca os dados novamente para atualizar as listas na tela
+      buscarDados();
+
+    } catch (error) {
+      console.error(`Erro ao adicionar ${tipo}:`, error);
+      alert(`Não foi possível adicionar a ${tipo}. Verifique o console para mais detalhes.`);
+    }
+  };
+
+  // nova função pra deletar
+
+  const handleDeletarTransacao = async (id, tipo) => {
+    // Pede uma confirmação ao usuário antes de deletar
+    if (window.confirm(`Tem certeza que deseja deletar esta ${tipo}?`)) {
+      try {
+        const endpoint = `http://localhost:3000/${tipo}s/${id}`;
+        await axios.delete(endpoint);
+        // Atualiza a lista na tela após deletar
+        buscarDados();
       } catch (error) {
-        // Mostra um erro no console do navegador se a chamada falhar
-        console.error("Erro ao buscar dados:", error);
+        console.error(`Erro ao deletar ${tipo}:`, error);
+        alert(`Não foi possível deletar a ${tipo}.`);
       }
     }
+  };
 
-    buscarDados(); // Executamos a função de busca
-  }, []); // O array vazio [] no final faz com que ele rode apenas uma vez, quando o app carrega.
-
-  // Calcula os totais e o saldo
   const totalDespesas = despesas.reduce((acc, despesa) => acc + despesa.valor, 0);
   const totalReceitas = receitas.reduce((acc, receita) => acc + receita.valor, 0);
   const saldo = totalReceitas - totalDespesas;
 
   return (
-    // Fundo da página
     <div className="bg-slate-100 min-h-screen font-sans text-slate-800">
-      {/* Container principal */}
       <div className="container mx-auto p-4 md:p-8">
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold text-slate-900">Meu Diário Financeiro</h1>
-          <p className="text-slate-500">Seu controle financeiro, simplificado.</p>
         </header>
+
+        <div className="grid md:grid-cols-2 gap-8 mb-10">
+          <FormularioTransacao onAdicionarTransacao={(transacao) => handleAdicionarTransacao(transacao, 'receita')} tipo="receita" />
+          <FormularioTransacao onAdicionarTransacao={(transacao) => handleAdicionarTransacao(transacao, 'despesa')} tipo="despesa" />
+        </div>
 
         {/* Card de Resumo */}
         <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-lg mb-10">
@@ -63,36 +96,20 @@ function App() {
           </div>
         </div>
 
-        {/* Grid para Receitas e Despesas */}
+        {/*Usa o novo componente para as listas */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Coluna de Receitas */}
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4">Receitas</h2>
-            <ul className="space-y-3">
-              {receitas.length > 0 ? receitas.map((receita) => (
-                <li key={receita.id} className="flex justify-between border-b pb-2">
-                  <span>{receita.descricao}</span>
-                  <span className="font-semibold text-green-600">+ R$ {receita.valor.toFixed(2)}</span>
-                </li>
-              )) : <p className="text-slate-500">Nenhuma receita cadastrada.</p>}
-            </ul>
-          </div>
-
-          {/* Coluna de Despesas */}
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4">Despesas</h2>
-            <ul className="space-y-3">
-              {despesas.length > 0 ? despesas.map((despesa) => (
-                <li key={despesa.id} className="flex justify-between border-b pb-2">
-                  <div>
-                    <span>{despesa.descricao}</span>
-                    <span className="text-sm text-slate-500 block">{despesa.categoria}</span>
-                  </div>
-                  <span className="font-semibold text-red-600">- R$ {despesa.valor.toFixed(2)}</span>
-                </li>
-              )) : <p className="text-slate-500">Nenhuma despesa cadastrada.</p>}
-            </ul>
-          </div>
+          <ListaTransacoes
+            titulo="Receitas"
+            itens={receitas}
+            tipo="receita"
+            onDeletar={handleDeletarTransacao}
+          />
+          <ListaTransacoes
+            titulo="Despesas"
+            itens={despesas}
+            tipo="despesa"
+            onDeletar={handleDeletarTransacao}
+          />
         </div>
       </div>
     </div>
